@@ -27,6 +27,7 @@ import android.content.Context;
 import android.content.DialogInterface;
 import android.content.DialogInterface.OnCancelListener;
 import android.content.Intent;
+import android.content.UriMatcher;
 import android.content.pm.PackageManager;
 import android.database.Cursor;
 import android.graphics.Bitmap;
@@ -91,9 +92,16 @@ public final class GalleryActivity extends AbstractGalleryActivity implements On
     public static final String KEY_FROM_SNAPCAM = "from-snapcam";
     public static final String KEY_TOTAL_NUMBER = "total-number";
 
-    //add for TimelinePage and PhotoPage: -1 don't show timeline title, 0 show timeline title
-    public static final int CLUSTER_ALBUMSET_NO_TITLE = -1;
-    public static final int CLUSTER_ALBUMSET_TIME_TITLE = 0;
+    private static final int ALL_DOWNLOADS = 1;
+    private static final int ALL_DOWNLOADS_ID = 2;
+    private static final UriMatcher sURIMatcher =
+            new UriMatcher(UriMatcher.NO_MATCH);
+    public static final String PERMISSION_ACCESS_ALL =
+            "android.permission.ACCESS_ALL_DOWNLOADS";
+    static {
+        sURIMatcher.addURI("downloads", "all_downloads", ALL_DOWNLOADS);
+        sURIMatcher.addURI("downloads", "all_downloads/#", ALL_DOWNLOADS_ID);
+    }
 
     private static final String TAG = "GalleryActivity";
     private Dialog mVersionCheckDialog;
@@ -370,6 +378,17 @@ public final class GalleryActivity extends AbstractGalleryActivity implements On
         } else if (Intent.ACTION_VIEW.equalsIgnoreCase(action)
                 || ACTION_REVIEW.equalsIgnoreCase(action)){
             mDrawerLayoutSupported = false;
+            Uri uri = intent.getData();
+            int flag = intent.getFlags();
+            int match = sURIMatcher.match(uri);
+            if ((match == ALL_DOWNLOADS || match == ALL_DOWNLOADS_ID) &&
+                   (flag & Intent.FLAG_GRANT_READ_URI_PERMISSION) == 0) {
+                if (checkCallingOrSelfPermission(
+                        PERMISSION_ACCESS_ALL) != PackageManager.PERMISSION_GRANTED) {
+                    Log.w(TAG, "no permission to view: " + uri);
+                    return;
+                }
+            }
             startViewAction(intent);
         } else {
             mDrawerLayoutSupported = true;
@@ -754,7 +773,8 @@ public final class GalleryActivity extends AbstractGalleryActivity implements On
 
                 DualCameraNativeEngine.getInstance().initDepthMap(
                         primaryBm, auxiliaryBm, mpoFilepath,
-                        DualCameraNativeEngine.getInstance().getCalibFilepath(context));
+                        DualCameraNativeEngine.getInstance().getCalibFilepath(context),
+                        DualCameraNativeEngine.DEFAULT_BRIGHTNESS_INTENSITY);
 
                 primaryBm.recycle();
                 primaryBm = null;
