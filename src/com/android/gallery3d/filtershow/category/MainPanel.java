@@ -40,8 +40,7 @@ import com.android.gallery3d.filtershow.filters.SimpleMakeupImageFilter;
 import com.android.gallery3d.filtershow.filters.TrueScannerActs;
 import com.android.gallery3d.filtershow.imageshow.MasterImage;
 import com.android.gallery3d.filtershow.state.StatePanel;
-import com.android.gallery3d.filtershow.tools.DualCameraNativeEngine;
-import com.android.gallery3d.filtershow.tools.DualCameraNativeEngine.DdmStatus;
+import com.android.gallery3d.filtershow.tools.DualCameraEffect;
 import com.android.gallery3d.filtershow.tools.TruePortraitNativeEngine;
 import com.android.gallery3d.filtershow.ui.DoNotShowAgainDialog;
 import com.android.gallery3d.util.GalleryUtils;
@@ -157,7 +156,6 @@ public class MainPanel extends Fragment implements BottomPanel.BottomPanelDelega
         getBottomPanelView(inflater);
         initBottomPanel();
 
-        updateDualCameraButton();
         FilterShowActivity activity = (FilterShowActivity) getActivity();
         showPanel(activity.getCurrentPanel());
         return mMainView;
@@ -183,7 +181,7 @@ public class MainPanel extends Fragment implements BottomPanel.BottomPanelDelega
         geometryButton = (ImageButton) bottomPanel.findViewById(R.id.geometryButton);
         filtersButton = (ImageButton) bottomPanel.findViewById(R.id.colorsButton);
         dualCamButton = (ImageButton) bottomPanel.findViewById(R.id.dualCamButton);
-        if(!DualCameraNativeEngine.getInstance().isLibLoaded()) {
+        if (!DualCameraEffect.isSupported()) {
             dualCamButton.setVisibility(View.GONE);
         }
 
@@ -506,12 +504,6 @@ public class MainPanel extends Fragment implements BottomPanel.BottomPanelDelega
         setCategoryFragment(categoryPanel, fromRight);
         mCurrentSelected = DUALCAM;
         selection(mCurrentSelected, true);
-
-        if(MasterImage.getImage().isDepthMapLoadingDone() == false) {
-            FilterShowActivity activity = (FilterShowActivity) getActivity();
-            if(activity.isLoadingVisible() == false)
-                activity.startLoadingIndicator();
-        }
     }
 
     public void loadCategoryTruePortraitPanel() {
@@ -639,12 +631,9 @@ public class MainPanel extends Fragment implements BottomPanel.BottomPanelDelega
         transaction.commit();
     }
 
-    public void updateDualCameraButton() {
-        if(dualCamButton != null) {
-            DdmStatus status = MasterImage.getImage().getDepthMapLoadingStatus();
-            boolean enable = (status == DdmStatus.DDM_LOADING ||
-                               status == DdmStatus.DDM_LOADED);
-            dualCamButton.setVisibility(enable?View.VISIBLE:View.GONE);
+    public void showDualCameraButton(boolean visible) {
+        if (dualCamButton != null) {
+            dualCamButton.setVisibility(visible ? View.VISIBLE : View.INVISIBLE);
         }
     }
 
