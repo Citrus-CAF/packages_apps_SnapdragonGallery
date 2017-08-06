@@ -1426,6 +1426,7 @@ DialogInterface.OnDismissListener, PopupMenu.OnDismissListener{
     }
 
     public void onMediaPickerStarted() {
+        mPresetDialog = null;
         toggleComparisonButtonVisibility();
         ActionBar actionBar = getActionBar();
         actionBar.hide();
