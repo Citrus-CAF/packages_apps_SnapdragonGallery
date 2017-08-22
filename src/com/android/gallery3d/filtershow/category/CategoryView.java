@@ -24,15 +24,21 @@ import android.graphics.Canvas;
 import android.graphics.Color;
 import android.graphics.Paint;
 import android.graphics.Rect;
+import android.view.LayoutInflater;
+import android.view.MenuItem;
 import android.view.MotionEvent;
 import android.view.View;
+import android.view.ActionMode;
+import android.widget.PopupMenu;
 import org.codeaurora.gallery.R;
 import com.android.gallery3d.filtershow.FilterShowActivity;
 import com.android.gallery3d.filtershow.filters.FilterRepresentation;
 import com.android.gallery3d.filtershow.ui.SelectionRenderer;
 
+import java.util.ArrayList;
+
 public class CategoryView extends IconView
-        implements View.OnClickListener, SwipableView{
+        implements View.OnClickListener, SwipableView,View.OnLongClickListener,PopupMenu.OnMenuItemClickListener{
 
     private static final String LOGTAG = "CategoryView";
     public static final int VERTICAL = 0;
@@ -56,6 +62,7 @@ public class CategoryView extends IconView
     public CategoryView(Context context) {
         super(context);
         setOnClickListener(this);
+        setOnLongClickListener(this);
         Resources res = getResources();
         mSelectionStroke = res.getDimensionPixelSize(R.dimen.thumbnail_margin);
         mSelectPaint = new Paint();
@@ -65,7 +72,7 @@ public class CategoryView extends IconView
 
         mSelectPaint.setColor(mSelectionColor);
         mBorderPaint = new Paint(mSelectPaint);
-//        mBorderPaint.setColor(Color.BLACK);
+        mBorderPaint.setColor(res.getColor(R.color.filtershow_info_test));
         mBorderStroke = mSelectionStroke / 3;
     }
 
@@ -135,10 +142,11 @@ public class CategoryView extends IconView
         mCanBeRemoved = action.canBeRemoved();
         setUseOnlyDrawable(false);
         if (mAction.getType() == Action.ADD_ACTION) {
-            Bitmap bitmap = BitmapFactory.decodeResource(getResources(), R.drawable.filtershow_add);
+            Bitmap bitmap = BitmapFactory.decodeResource(getResources(),
+                    R.drawable.filtershow_add_new);
             setBitmap(bitmap);
-            setUseOnlyDrawable(true);
-            setText(getResources().getString(R.string.filtershow_add_button_looks));
+         //   setUseOnlyDrawable(true);
+         //   setText(getResources().getString(R.string.filtershow_add_button_looks));
         } else {
             setBitmap(mAction.getImage());
         }
@@ -172,12 +180,13 @@ public class CategoryView extends IconView
         if (event.getActionMasked() == MotionEvent.ACTION_UP) {
             activity.startTouchAnimation(this, event.getX(), event.getY());
         }
-        if (!canBeRemoved()) {
+        if (!canBeRemoved() || checkPreset()) {
             return ret;
         }
         if (event.getActionMasked() == MotionEvent.ACTION_DOWN) {
             mStartTouchY = event.getY();
             mStartTouchX = event.getX();
+
         }
         if (event.getActionMasked() == MotionEvent.ACTION_UP) {
             setTranslationX(0);
@@ -188,12 +197,40 @@ public class CategoryView extends IconView
             if (getOrientation() == CategoryView.VERTICAL) {
                 delta = event.getX() - mStartTouchX;
             }
-            if (Math.abs(delta) > mDeleteSlope) {
+           if (Math.abs(delta) > mDeleteSlope) {
                 activity.setHandlesSwipeForView(this, mStartTouchX, mStartTouchY);
             }
         }
         return true;
     }
+
+    @Override
+    public boolean onLongClick(View view){
+        if (canBeRemoved()){
+            mAdapter.setSelected(this);
+            PopupMenu popup = new PopupMenu((FilterShowActivity)getContext(),view);
+            popup.getMenuInflater().inflate(R.menu.filtershow_menu_edit,popup.getMenu());
+            popup.setOnMenuItemClickListener(this);
+            popup.show();
+            return true;
+        }
+        return false;
+    }
+
+    @Override
+    public boolean onMenuItemClick (MenuItem item) {
+        FilterShowActivity activity = (FilterShowActivity) getContext();
+        switch (item.getItemId()) {
+            case R.id.deleteButton:
+                activity.handlePreset(mAction,this,R.id.deleteButton);
+                return true;
+            case R.id.renameButton:
+                activity.handlePreset(mAction,this,R.id.renameButton);
+                return true;
+        }
+        return false;
+    }
+
 
     @Override
     public void delete() {
@@ -219,4 +256,15 @@ public class CategoryView extends IconView
                     mPaint);
         }
     }
+
+    private boolean checkPreset () {
+        FilterRepresentation filterRepresentation = mAction.getRepresentation();
+        if (filterRepresentation != null) {
+            if (filterRepresentation.getFilterType() == FilterRepresentation.TYPE_PRESETFILTER) {
+                return true;
+            }
+        }
+        return false;
+    }
+
 }
