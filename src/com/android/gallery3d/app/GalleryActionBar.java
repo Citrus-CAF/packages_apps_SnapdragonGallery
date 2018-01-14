@@ -458,8 +458,7 @@ public class GalleryActionBar {
 
     public void setBackGroundDefault()
     {
-        mActionBar.setBackgroundDrawable(new ColorDrawable(Color.parseColor("#e53935")));
+        mActionBar.setBackgroundDrawable(
+		new ColorDrawable(mContext.getResources().getColor(R.color.photo_page_action_bar_background_color)));
     }
-
-
 }
